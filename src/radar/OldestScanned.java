@@ -2,6 +2,7 @@ package radar;
 
 import java.util.*;
 
+import data.*;
 import robocode.*;
 import robocode.util.*;
 import robots.*;
@@ -11,17 +12,7 @@ import robots.*;
  * has been scanned during the last iteration).
  * @author cryingshadow
  */
-public class OldestScanned implements RadarStrategy {
-
-    /**
-     * Map from names to absolute bearing angle in radians for all enemies.
-     */
-    private final Map<String, Double> enemies;
-
-    /**
-     * Our own robot.
-     */
-    private final Shade me;
+public class OldestScanned extends AbstractRobotStrategy implements RadarStrategy {
 
     /**
      * The direction in which to turn the radar. Only its sign is relevant but it is a double for convenience.
@@ -36,37 +27,55 @@ public class OldestScanned implements RadarStrategy {
 
     /**
      * Constructor.
-     * @param me Our own robot.
      */
-    public OldestScanned(final Shade me) {
-        this.me = me;
-        this.enemies = new LinkedHashMap<String, Double>();
-        this.scanDirection = 1.0;
-        this.soughtByRadar = null;
+    public OldestScanned() {
+        this(null, 1.0, null);
+    }
+
+    /**
+     * Constructor.
+     * @param bot Our own robot.
+     * @param scanDirection
+     * @param soughtByRadar
+     */
+    private OldestScanned(
+        final Shade bot,
+        final double scanDirection,
+        final String soughtByRadar
+    ) {
+        super(bot);
+        this.scanDirection = scanDirection;
+        this.soughtByRadar = soughtByRadar;
     }
 
     @Override
     public void onRobotDeath(final RobotDeathEvent event) {
-        this.enemies.remove(event.getName());
         this.soughtByRadar = null;
     }
 
     @Override
     public void onScannedRobot(final ScannedRobotEvent event) {
+        final Shade bot = this.getRegisteredRobot();
+        Map<String, RobotData> enemies = bot.getEnemies();
         final String enemyName = event.getName();
-        this.updateEnemyBearing(enemyName, this.me.getAbsoluteBearing(event));
         if (this.finishedScanRound(enemyName)) {
             this.scanDirection =
-                Utils.normalRelativeAngle(this.enemies.values().iterator().next() - this.me.getRadarHeadingRadians());
-            this.soughtByRadar = this.enemies.keySet().iterator().next();
+                Utils.normalRelativeAngle(enemies.values().iterator().next().getMostRecentAbsoluteBearing() - bot.getRadarHeadingRadians());
+            this.soughtByRadar = enemies.keySet().iterator().next();
         }
-        this.me.out.println("Scanned bot: " + enemyName);
+        bot.out.println("Scanned bot: " + enemyName);
+    }
+
+    @Override
+    public OldestScanned registerRobot(final Shade robot) {
+        return new OldestScanned(robot, this.scanDirection, this.soughtByRadar);
     }
 
     @Override
     public void repeatForever() {
-        this.me.setTurnRadarRightRadians(this.scanDirection * Double.POSITIVE_INFINITY);
-        this.me.scan();
+        final Shade bot = this.getRegisteredRobot();
+        bot.setTurnRadarRightRadians(this.scanDirection * Double.POSITIVE_INFINITY);
+        bot.scan();
     }
 
     /**
@@ -75,18 +84,10 @@ public class OldestScanned implements RadarStrategy {
      *         for or we do not look for a specific enemy.
      */
     private boolean finishedScanRound(final String enemyName) {
+        Shade bot = this.getRegisteredRobot();
         return
-            this.enemies.size() == this.me.getOthers()
+            bot.getEnemies().size() == bot.getOthers()
             && (this.soughtByRadar == null || enemyName.equals(this.soughtByRadar));
-    }
-
-    /**
-     * Updates the absolute bearing of the specified enemy.
-     * @param enemyName The name of the enemy to update.
-     * @param absoluteBearing The new absolute bearing of the specified enemy in radians.
-     */
-    private void updateEnemyBearing(final String enemyName, final double absoluteBearing) {
-        this.enemies.put(enemyName, absoluteBearing);
     }
 
 }

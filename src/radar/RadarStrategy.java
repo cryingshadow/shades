@@ -1,12 +1,13 @@
 package radar;
 
 import robocode.*;
+import robots.*;
 
 /**
  * Strategy for handling the radar.
  * @author cryingshadow
  */
-public interface RadarStrategy {
+public interface RadarStrategy extends RobotStrategy {
 
     /**
      * To be executed whenever another robot dies.
@@ -20,9 +21,7 @@ public interface RadarStrategy {
      */
     public void onScannedRobot(final ScannedRobotEvent event);
 
-    /**
-     * To be executed in an infinite loop in the run method.
-     */
-    public void repeatForever();
+    @Override
+    public RadarStrategy registerRobot(Shade robot);
 
 }
