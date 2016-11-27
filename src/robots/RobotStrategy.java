@@ -9,6 +9,14 @@ import robocode.*;
 public interface RobotStrategy {
 
     /**
+     * To be executed once in the run method before execution of the infinite loop there.
+     * @param robot Our own robot.
+     */
+    public default void initialize(final Shade robot) {
+        // do nothing
+    }
+
+    /**
      * To be executed whenever another robot dies.
      * @param robot Our own robot.
      * @param event The observed event.

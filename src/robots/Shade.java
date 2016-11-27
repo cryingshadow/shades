@@ -22,6 +22,11 @@ public abstract class Shade extends AdvancedRobot {
     private final BodyStrategy bodyStrategy;
 
     /**
+     * Our current status.
+     */
+    private RobotStatus currentStatus;
+
+    /**
      * Data about our enemies.
      */
     private final Map<String, RobotData> enemies;
@@ -83,7 +88,15 @@ public abstract class Shade extends AdvancedRobot {
     }
 
     @Override
+    public void onStatus(final StatusEvent event) {
+        this.currentStatus = event.getStatus();
+    }
+
+    @Override
     public void run() {
+        this.radarStrategy.initialize(this);
+        this.gunStrategy.initialize(this);
+        this.bodyStrategy.initialize(this);
         while (true) {
             this.radarStrategy.repeatForever(this);
             this.gunStrategy.repeatForever(this);
@@ -99,7 +112,7 @@ public abstract class Shade extends AdvancedRobot {
         if (!this.enemies.containsKey(enemyName)) {
             this.enemies.put(enemyName, new RobotData(this));
         }
-        this.enemies.get(enemyName).registerEvent(event);
+        this.enemies.get(enemyName).registerEvent(event, this.currentStatus);
     }
 
 }

@@ -1,0 +1,18 @@
+package util;
+
+/**
+ * Utility methods for geometry calculations.
+ * @author cryingshadow
+ */
+public abstract class Geometry {
+
+    /**
+     * @param ownHeadingRadians Own heading in radians.
+     * @param otherBearingRadians The other's relative bearing in radians.
+     * @return The other's absolute bearing in radians.
+     */
+    public static double getAbsoluteBearing(final double ownHeadingRadians, final double otherBearingRadians) {
+        return ownHeadingRadians + otherBearingRadians;
+    }
+
+}
