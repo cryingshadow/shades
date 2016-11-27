@@ -2,7 +2,6 @@ package robots;
 
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.function.*;
 
 import body.*;
 import data.*;
@@ -44,9 +43,9 @@ public abstract class Shade extends AdvancedRobot {
      * @param bodyStrategy The strategy for body control.
      */
     public Shade(final RadarStrategy radarStrategy, final GunStrategy gunStrategy, final BodyStrategy bodyStrategy) {
-        this.radarStrategy = radarStrategy.registerRobot(this);
-        this.gunStrategy = gunStrategy.registerRobot(this);
-        this.bodyStrategy = bodyStrategy.registerRobot(this);
+        this.radarStrategy = radarStrategy;
+        this.gunStrategy = gunStrategy;
+        this.bodyStrategy = bodyStrategy;
         this.enemies = new ConcurrentHashMap<String, RobotData>();
     }
 
@@ -68,42 +67,39 @@ public abstract class Shade extends AdvancedRobot {
     @Override
     public void onRobotDeath(final RobotDeathEvent event) {
         final String enemyName = event.getName();
-        this.updateRobotData(
-            enemyName,
-            (data) -> data.registerRobotDeathEvent(event)
-        );
-        this.radarStrategy.onRobotDeath(event);
+        this.updateRobotData(enemyName, event);
+        this.radarStrategy.onRobotDeath(this, event);
+        this.gunStrategy.onRobotDeath(this, event);
+        this.bodyStrategy.onRobotDeath(this, event);
     }
 
     @Override
     public void onScannedRobot(final ScannedRobotEvent event) {
         final String enemyName = event.getName();
-        this.updateRobotData(
-            enemyName,
-            (data) -> data.registerScannedRobotEvent(event)
-        );
-        this.radarStrategy.onScannedRobot(event);
-        this.fire(1);
+        this.updateRobotData(enemyName, event);
+        this.radarStrategy.onScannedRobot(this, event);
+        this.gunStrategy.onScannedRobot(this, event);
+        this.bodyStrategy.onScannedRobot(this, event);
     }
 
     @Override
     public void run() {
         while (true) {
-            this.radarStrategy.repeatForever();
-            this.gunStrategy.repeatForever();
-            this.bodyStrategy.repeatForever();
+            this.radarStrategy.repeatForever(this);
+            this.gunStrategy.repeatForever(this);
+            this.bodyStrategy.repeatForever(this);
         }
     }
 
     /**
      * @param enemyName The name of the enemy with data to be updated.
-     * @param update The void function performing the update.
+     * @param event The event to be registered.
      */
-    protected void updateRobotData(final String enemyName, final Consumer<RobotData> update) {
+    protected void updateRobotData(final String enemyName, final Event event) {
         if (!this.enemies.containsKey(enemyName)) {
             this.enemies.put(enemyName, new RobotData(this));
         }
-        update.accept(this.enemies.get(enemyName));
+        this.enemies.get(enemyName).registerEvent(event);
     }
 
 }

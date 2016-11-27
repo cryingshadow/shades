@@ -13,70 +13,45 @@ import robots.*;
 public class RobotData {
 
     /**
-     * The absolute bearing angle between me and this enemy in radians.
+     * The events observed for this enemy.
      */
-    private final Deque<AbsoluteBearing> absoluteBearings;
-
-    /**
-     * The own robot.
-     */
-    private final Shade bot;
-
-    /**
-     * The time of death (null means still alive).
-     */
-    private Long death;
+    private final Deque<Event> events;
 
     /**
      * @param robot The own robot.
      */
     public RobotData(final Shade robot) {
-        this.bot = robot;
-        this.absoluteBearings = new LinkedBlockingDeque<AbsoluteBearing>();
-        this.death = null;
+        this.events = new LinkedBlockingDeque<Event>();
     }
 
     /**
-     * @return the absoluteBearing
+     * @return The death event of this enemy.
      */
-    public double getMostRecentAbsoluteBearing() {
-        return this.absoluteBearings.getFirst().getAbsoluteBearing();
+    public Optional<RobotDeathEvent> getDeathEvent() {
+        return this.isAlive() ? Optional.empty() : Optional.of((RobotDeathEvent)this.events.getFirst());
     }
 
     /**
-     * @return The time when this robot died. Null if it is still alive.
+     * @return The most recently observed absolute bearing of this enemy.
      */
-    public Long getTimeOfDeath() {
-        return this.death;
+    public Optional<ScannedRobotEvent> getMostRecentScanEvent() {
+        return
+            this.events.stream().filter(e -> e instanceof ScannedRobotEvent).map(e -> (ScannedRobotEvent)e).findFirst();
     }
 
     /**
      * @return True iff this robot is still alive.
      */
     public boolean isAlive() {
-        return this.death == null;
+        return !(this.events.peekFirst() instanceof RobotDeathEvent);
     }
 
     /**
-     * @param event The death event.
+     * Registers the specified event.
+     * @param event The event to register.
      */
-    public void registerRobotDeathEvent(final RobotDeathEvent event) {
-        this.death = event.getTime();
-    }
-
-    /**
-     * @param event The event indicating a scanned robot.
-     */
-    public void registerScannedRobotEvent(final ScannedRobotEvent event) {
-        this.storeAbsoluteBearing(this.bot.getAbsoluteBearing(event), event.getTime());
-    }
-
-    /**
-     * @param absoluteBearing The absolute bearing angle between me and this enemy in radians.
-     * @param timestamp The timestamp when the bearing was scanned.
-     */
-    public void storeAbsoluteBearing(final double absoluteBearing, final long timestamp) {
-        this.absoluteBearings.addFirst(new AbsoluteBearing(absoluteBearing, timestamp));
+    public void registerEvent(final Event event) {
+        this.events.addFirst(event);
     }
 
 }
