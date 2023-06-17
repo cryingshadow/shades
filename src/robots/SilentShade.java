@@ -1,7 +1,10 @@
 package robots;
 
+import java.util.*;
+
 import body.*;
 import gun.*;
+import other.*;
 import radar.*;
 
 /**
@@ -14,7 +17,14 @@ public class SilentShade extends Shade {
      * Constructor.
      */
     public SilentShade() {
-        super(new OldestScanned(), new SimpleTargetting(), new SimpleMovement());
+        super(
+            List.of(
+                new WobbleClosest(),
+                new SimpleTargetting(),
+                new SimpleMovement(),
+                new ColorStrategy()
+            )
+        );
     }
 
 }

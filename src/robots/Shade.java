@@ -3,11 +3,9 @@ package robots;
 import java.util.*;
 import java.util.concurrent.*;
 
-import body.*;
 import data.*;
-import gun.*;
-import radar.*;
 import robocode.*;
+import util.*;
 
 /**
  * Parent class for my robots containing utility methods and allowing for configuration by injecting strategies for
@@ -16,10 +14,7 @@ import robocode.*;
  */
 public abstract class Shade extends AdvancedRobot {
 
-    /**
-     * The strategy for body control.
-     */
-    private final BodyStrategy bodyStrategy;
+    public final AdvancedEnemyBot enemy = new AdvancedEnemyBot();
 
     /**
      * Our current status.
@@ -31,26 +26,10 @@ public abstract class Shade extends AdvancedRobot {
      */
     private final Map<String, RobotData> enemies;
 
-    /**
-     * The strategy for gun control.
-     */
-    private final GunStrategy gunStrategy;
+    private final List<RobotStrategy> strategies;
 
-    /**
-     * The strategy for radar control.
-     */
-    private final RadarStrategy radarStrategy;
-
-    /**
-     * Constructor.
-     * @param radarStrategy The strategy for radar control.
-     * @param gunStrategy The strategy for gun control.
-     * @param bodyStrategy The strategy for body control.
-     */
-    public Shade(final RadarStrategy radarStrategy, final GunStrategy gunStrategy, final BodyStrategy bodyStrategy) {
-        this.radarStrategy = radarStrategy;
-        this.gunStrategy = gunStrategy;
-        this.bodyStrategy = bodyStrategy;
+    public Shade(final List<RobotStrategy> strategies) {
+        this.strategies = strategies;
         this.enemies = new ConcurrentHashMap<String, RobotData>();
     }
 
@@ -73,18 +52,18 @@ public abstract class Shade extends AdvancedRobot {
     public void onRobotDeath(final RobotDeathEvent event) {
         final String enemyName = event.getName();
         this.updateRobotData(enemyName, event);
-        this.radarStrategy.onRobotDeath(this, event);
-        this.gunStrategy.onRobotDeath(this, event);
-        this.bodyStrategy.onRobotDeath(this, event);
+        for (final RobotStrategy strategy : this.strategies) {
+            strategy.onRobotDeath(this, event);
+        }
     }
 
     @Override
     public void onScannedRobot(final ScannedRobotEvent event) {
         final String enemyName = event.getName();
         this.updateRobotData(enemyName, event);
-        this.radarStrategy.onScannedRobot(this, event);
-        this.gunStrategy.onScannedRobot(this, event);
-        this.bodyStrategy.onScannedRobot(this, event);
+        for (final RobotStrategy strategy : this.strategies) {
+            strategy.onScannedRobot(this, event);
+        }
     }
 
     @Override
@@ -94,13 +73,15 @@ public abstract class Shade extends AdvancedRobot {
 
     @Override
     public void run() {
-        this.radarStrategy.initialize(this);
-        this.gunStrategy.initialize(this);
-        this.bodyStrategy.initialize(this);
+        for (final RobotStrategy strategy : this.strategies) {
+            strategy.initialize(this);
+        }
+        this.execute();
         while (true) {
-            this.radarStrategy.repeatForever(this);
-            this.gunStrategy.repeatForever(this);
-            this.bodyStrategy.repeatForever(this);
+            for (final RobotStrategy strategy : this.strategies) {
+                strategy.repeatForever(this);
+            }
+            this.execute();
         }
     }
 
